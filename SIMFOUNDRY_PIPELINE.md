@@ -1,8 +1,8 @@
 # SimFoundry Pipeline A
 
 This file is the captain-facing route and artifact contract for Pipeline A reconstruction.
-The implementation is authoritative for commands, configuration keys, stage ordering, and file layout.
-The implementation reference is [`NVlabs/SimFoundry/scripts/pipeline/A_reconstruction`](https://github.com/NVlabs/SimFoundry/tree/main/scripts/pipeline/A_reconstruction), especially [`run.sh`](https://github.com/NVlabs/SimFoundry/blob/main/scripts/pipeline/A_reconstruction/run.sh), [`run_reconstruction.py`](https://github.com/NVlabs/SimFoundry/blob/main/scripts/pipeline/A_reconstruction/run_reconstruction.py), and [`scripts/pipeline/README.md`](https://github.com/NVlabs/SimFoundry/blob/main/scripts/pipeline/README.md).
+The attempt manifest's recorded SimFoundry remote URL and exact checked-out commit are authoritative for commands, configuration keys, stage ordering, and file layout.
+The upstream `main` references are navigation links to [`NVlabs/SimFoundry/scripts/pipeline/A_reconstruction`](https://github.com/NVlabs/SimFoundry/tree/main/scripts/pipeline/A_reconstruction), especially [`run.sh`](https://github.com/NVlabs/SimFoundry/blob/main/scripts/pipeline/A_reconstruction/run.sh), [`run_reconstruction.py`](https://github.com/NVlabs/SimFoundry/blob/main/scripts/pipeline/A_reconstruction/run_reconstruction.py), and [`scripts/pipeline/README.md`](https://github.com/NVlabs/SimFoundry/blob/main/scripts/pipeline/README.md).
 The method context is SimFoundry arXiv v4, [`arXiv:2606.28276v4`](https://arxiv.org/abs/2606.28276).
 
 ## Route
@@ -11,10 +11,12 @@ The selected route is video input through stages 1b, 2, 3, 4, 5, 6, 7, 8, 9, 10,
 Stage 2 uses the DepthAnything3 backend in the `da3` environment.
 Stages 1b, 3, 4, 5, 6, 8, 9, 10, 11, 12, and 13 use the `simfoundry` environment.
 Stage 7 uses the `hunyuan` environment with Hunyuan3D-2.1 for both shape and texture and `s7_mesh.low_vram=true`.
-Codex text VLM is the selected text reasoning route wherever the configured pipeline calls a text VLM.
-FLUX is the selected image route for stage 5 object removal and stage 6 object completion and upsampling.
+Before any text-VLM stage, Luna runs `export SIMFOUNDRY_TEXT_VLM_BACKEND=codex`.
+The installed `simfoundry.models.vlm.Gemini` factory adapter reads that selector and redirects text-capable calls to `CodexSubagent`, which runs the headless Codex CLI with `gpt-5.6-sol` and `xhigh` reasoning effort.
+FLUX remains responsible for stage 5 object removal and stage 6 object completion and upsampling and is not replaced by the text-VLM selector.
 The route omits stage 2c background Gaussian splat generation and does not pass `--bg-splat`.
 The route omits stage 8b articulation decomposition and does not pass `--detect-articulation`.
+The route pins `s13_og.include_robot=false` for the scene-reconstruction-only scope.
 The route therefore produces a foreground reconstruction with the normal floor and skybox behavior at stage 13 rather than a background splat scene.
 
 Each attempt must use a fresh resolved scene directory under `data/simfoundry-runs/`, such as `data/simfoundry-runs/official_Fruits/attempt-001`, so that a retry cannot overwrite an automatic estimate or a prior review pass.
@@ -177,7 +179,7 @@ Acceptance: Every imported USD asset loads headlessly, contains the expected vis
 
 Purpose: Load the imported assets with stabilized poses and export the final reconstructed OmniGibson scene and preview.
 Inputs: Stage 10 object metadata, stage 11 settled poses, stage 12 USD assets, and the selected no-background-splat scene configuration.
-Models or environment: Headless OmniGibson in the `simfoundry` environment with the configured viewer camera and optional robot disabled unless separately requested.
+Models or environment: Headless OmniGibson in the `simfoundry` environment with the configured viewer camera and `s13_og.include_robot=false`.
 Outputs: `s13_og/reconstructed_og_scene.json`, `s13_og/settled_poses.json`, `s13_og/reconstructed_scene.png`, and stage metadata.
 Failure modes: Missing USD asset, failed scene reset, invalid pose or material, sensor or viewer startup failure, non-finite object state, or an exported scene that cannot be reopened.
 Visual evidence: The final OmniGibson preview, a headless reload and render log, object count and names, and a final scene JSON structural check.
@@ -192,16 +194,4 @@ The detailed reviewer outcomes, mediation loop, attempt naming, and checkbox tra
 
 ## Current evidence
 
-Current snapshot at `2026-08-26T23:00:30Z` records seven installed environments: `simfoundry`, `hunyuan`, `any6d`, `da3`, `void`, `nerfstudio_simfoundry`, and `3dgrut`.
-The final environment matrix is green.
-`tiny-cuda-nn` was rebuilt and behavior-tested for `sm_86`.
-Nine checkpoint groups were downloaded.
-The Pipeline A dry-run passed.
-Repository tests passed with 243 passed and 29 skipped.
-The valid bounded Hunyuan stage-7 object smoke passed shape and texture execution, artifact loadability, manifest and stage status, and a raw `nvidia-smi` peak of about 17203 MiB for one discovered object, producing a shape OBJ and textured GLB.
-Sol returned `BLOCK_INPUT` for Hunyuan visual-quality validation because the smoke input was a fully opaque full scene rather than an isolated RGBA object.
-The quality correction is deferred to a versioned isolated crop before full stage 7, and the earlier home-quota cache-location failure remains in the retained smoke logs as historical evidence.
-The `official_Fruits` run received Sol PASS for stage 1b and stage 2.
-Stages 3 and 4 produced provisional outputs but are not yet Sol-approved.
-Stage 5 terminated before useful decomposition output because Flash-Attention `2.8.3` is outside the required `2.7.1`-`2.7.4` range, and stage 6 did not start.
-No full-video stage is marked accepted until its versioned artifacts receive a Sol PASS.
+The single timestamped snapshot owner is [`SIMFOUNDRY_EXECUTION_PLAN.md`](SIMFOUNDRY_EXECUTION_PLAN.md#current-evidence-boundary).

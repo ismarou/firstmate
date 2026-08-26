@@ -1,7 +1,7 @@
 # SimFoundry Execution Plan
 
 This file is the captain-facing execution order, reviewer gate, attempt policy, and acceptance tracker for the selected Pipeline A route.
-The implementation authority is [`NVlabs/SimFoundry`](https://github.com/NVlabs/SimFoundry), and the stage contract is in [`SIMFOUNDRY_PIPELINE.md`](SIMFOUNDRY_PIPELINE.md).
+The attempt manifest's recorded SimFoundry remote URL and exact checked-out commit are the implementation authority, the upstream [`NVlabs/SimFoundry`](https://github.com/NVlabs/SimFoundry) link is for navigation, and the stage contract is in [`SIMFOUNDRY_PIPELINE.md`](SIMFOUNDRY_PIPELINE.md).
 
 ## Roles and hard dependency
 
@@ -12,6 +12,8 @@ Sol is a hard dependency after every module or step, including installation rows
 Luna must not begin the next module or step until Sol has inspected the current outputs, returned PASS or concrete steering, and every requested correction has been rerun and accepted.
 Silence, a successful process exit, a green dry-run, or a plausible log is not a reviewer PASS.
 Firstmate records the reviewer result against the exact attempt and keeps the next step blocked until the result is complete.
+Every Pipeline A stage runs as `scripts/pipeline/A_reconstruction/run.sh --include <single-stage-id> --no-stream`, with exactly one stage identifier in `--include`.
+When that command exits, Luna packages immutable versioned evidence and stops while Firstmate routes it to Sol, and only PASS authorizes the next stage command.
 
 ## Reviewer outcomes
 
@@ -37,7 +39,7 @@ Sol must inspect both visual and non-visual evidence before returning PASS.
 ## Versioned attempts
 
 Every run uses a unique resolved scene directory under `data/simfoundry-runs/`, such as `data/simfoundry-runs/official_Fruits/attempt-001`, and never reuses a prior attempt directory for a retry.
-The attempt manifest records the source video checksum, route, configuration overrides, environment matrix, model identifiers, command lines, and output paths.
+The attempt manifest records the SimFoundry remote URL and exact checked-out commit, Codex adapter revision, resolved text-VLM backend, model, and effort, source video checksum, route, configuration overrides, environment matrix, model identifiers, command lines, and output paths.
 Stage 5 object iterations remain as `iter_<N>` records, stage 7 generator intermediates remain enabled, and stage 8 automatic poses remain in `info/` while refinements use new `info_interactive*` directories.
 An attempt correction receives a new attempt number or an explicit refinement suffix such as `attempt-001-r1`, and no correction may overwrite the automatic estimate or a prior Sol PASS.
 Firstmate links each Sol result to one immutable attempt identifier and marks superseded attempts as retained history rather than deleting them.
@@ -48,8 +50,8 @@ The following order is strict, and each row ends at a Sol gate before the next r
 
 ### M0 - freeze the route
 
-Luna subgoal: Create the attempt manifest and pin video mode, Codex text VLM, FLUX for stages 5 and 6, Hunyuan3D-2.1 for stage 7 shape and texture, `low_vram=true`, no stage 2c, and no stage 8b.
-Required evidence: The resolved command, configuration diff, route summary, and unique attempt directory.
+Luna subgoal: Create the attempt manifest and pin video mode, `SIMFOUNDRY_TEXT_VLM_BACKEND=codex`, the `CodexSubagent` headless Codex CLI route with `gpt-5.6-sol` and `xhigh`, FLUX for stages 5 and 6, Hunyuan3D-2.1 for stage 7 shape and texture, `low_vram=true`, no stage 2c, no stage 8b, and `s13_og.include_robot=false`.
+Required evidence: The manifest-pinned source and adapter revisions, resolved single-stage `--include <single-stage-id> --no-stream` command template, configuration diff, route summary, and unique attempt directory.
 Sol gate: PASS confirms the route and attempt identity, or STEER names the exact route correction.
 
 ### M1 - install the seven environments
@@ -161,35 +163,46 @@ Luna subgoal: Compare the accepted attempt manifests and reviewer records for al
 Required evidence: Three final previews, three scene reload results, per-stage PASS records, retained-attempt index, and unresolved issue list.
 Sol gate: PASS closes the package only when every video and every included stage has its own PASS.
 
+## Accepted evidence records
+
+The tracker links every checked cell to its immutable attempt and exact review or evidence record.
+
+| Record | Exact attempt | Manifest | Review or evidence record |
+|---|---|---|---|
+| <a id="verification-snapshot-20260826t230030z"></a>Verification snapshot | `data/simfoundry-runs/verification/attempt-20260826T230030Z` | `data/simfoundry-runs/verification/attempt-20260826T230030Z/manifest.json` | `data/simfoundry-runs/verification/attempt-20260826T230030Z/evidence-index.md` |
+| <a id="hunyuan-smoke-attempt-001"></a>Bounded Hunyuan smoke | `data/simfoundry-runs/hunyuan-smoke/attempt-001` | `data/simfoundry-runs/hunyuan-smoke/attempt-001/manifest.json` | `data/simfoundry-runs/hunyuan-smoke/attempt-001/sol-review.md` |
+| <a id="official-fruits-stage-1b-pass"></a>`official_Fruits` stage 1b PASS | `data/simfoundry-runs/official_Fruits/attempt-001` | `data/simfoundry-runs/official_Fruits/attempt-001/manifest.json` | `data/simfoundry-runs/official_Fruits/attempt-001/reviews/stage-1b-sol.md` |
+| <a id="official-fruits-stage-2-pass"></a>`official_Fruits` stage 2 PASS | `data/simfoundry-runs/official_Fruits/attempt-001` | `data/simfoundry-runs/official_Fruits/attempt-001/manifest.json` | `data/simfoundry-runs/official_Fruits/attempt-001/reviews/stage-2-sol.md` |
+
 ## Fine-grained tracker
 
 `[x]` means the evidence is current and accepted, while `[ ]` means not yet accepted or still in progress.
 
 ### Installation and verification
 
-- [x] `simfoundry` environment is installed.
-- [x] `hunyuan` environment is installed.
-- [x] `any6d` environment is installed.
-- [x] `da3` environment is installed.
-- [x] `void` environment is installed.
-- [x] `nerfstudio_simfoundry` environment is installed.
-- [x] `3dgrut` environment is installed.
-- [x] Final environment matrix is green.
-- [x] `tiny-cuda-nn` was rebuilt and behavior-tested for `sm_86`.
-- [x] Nine checkpoint groups were downloaded.
-- [x] Pipeline A dry-run passed.
-- [x] Repository tests passed with 243 passed and 29 skipped.
+- [x] [`simfoundry` environment is installed.](#verification-snapshot-20260826t230030z)
+- [x] [`hunyuan` environment is installed.](#verification-snapshot-20260826t230030z)
+- [x] [`any6d` environment is installed.](#verification-snapshot-20260826t230030z)
+- [x] [`da3` environment is installed.](#verification-snapshot-20260826t230030z)
+- [x] [`void` environment is installed.](#verification-snapshot-20260826t230030z)
+- [x] [`nerfstudio_simfoundry` environment is installed.](#verification-snapshot-20260826t230030z)
+- [x] [`3dgrut` environment is installed.](#verification-snapshot-20260826t230030z)
+- [x] [Final environment matrix is green.](#verification-snapshot-20260826t230030z)
+- [x] [`tiny-cuda-nn` was rebuilt and behavior-tested for `sm_86`.](#verification-snapshot-20260826t230030z)
+- [x] [Nine checkpoint groups were downloaded.](#verification-snapshot-20260826t230030z)
+- [x] [Pipeline A dry-run passed.](#verification-snapshot-20260826t230030z)
+- [x] [Repository tests passed with 243 passed and 29 skipped.](#verification-snapshot-20260826t230030z)
 - [ ] Selected Codex text VLM access is verified for the actual run attempt.
 - [ ] Selected FLUX access is verified for stages 5 and 6 in the actual run environment.
 - [ ] All attempt manifests record the exact source checksum, route, and configuration.
 
 ### Bounded Hunyuan smoke
 
-- [x] Cache-location recovery from the home-quota failure completed for the valid one-object smoke.
-- [x] Hunyuan3D-2.1 shape smoke with `low_vram=true` passed and produced one shape OBJ.
-- [x] Hunyuan3D-2.1 texture smoke with `low_vram=true` passed and produced one textured GLB.
-- [x] The one-object smoke reported successful manifest and stage status and a raw `nvidia-smi` peak of about 17203 MiB.
-- [x] Sol returned `BLOCK_INPUT` for visual-quality validation because the smoke input was a fully opaque full scene rather than an isolated RGBA object.
+- [x] [Cache-location recovery from the home-quota failure completed for the valid one-object smoke.](#hunyuan-smoke-attempt-001)
+- [x] [Hunyuan3D-2.1 shape smoke with `low_vram=true` passed and produced one shape OBJ.](#hunyuan-smoke-attempt-001)
+- [x] [Hunyuan3D-2.1 texture smoke with `low_vram=true` passed and produced one textured GLB.](#hunyuan-smoke-attempt-001)
+- [x] [The one-object smoke reported successful manifest and stage status and a raw `nvidia-smi` peak of about 17203 MiB.](#hunyuan-smoke-attempt-001)
+- [x] [Sol returned `BLOCK_INPUT` for visual-quality validation because the smoke input was a fully opaque full scene rather than an isolated RGBA object.](#hunyuan-smoke-attempt-001)
 - [ ] The smoke is rerun with a versioned isolated RGBA crop and receives Sol PASS for visual quality.
 - [ ] Sol returned PASS for the bounded Hunyuan smoke.
 
@@ -197,8 +210,8 @@ Sol gate: PASS closes the package only when every video and every included stage
 
 | Stage | `Fruits.mp4` | `PutCupInBowl.mp4` | `clipboard_fruit_basket_5s_10fps.mp4` |
 |---|---|---|---|
-| 1b | [x] Sol PASS | [ ] Sol PASS | [ ] Sol PASS |
-| 2 | [x] Sol PASS | [ ] Sol PASS | [ ] Sol PASS |
+| 1b | [x] [Sol PASS](#official-fruits-stage-1b-pass) | [ ] Sol PASS | [ ] Sol PASS |
+| 2 | [x] [Sol PASS](#official-fruits-stage-2-pass) | [ ] Sol PASS | [ ] Sol PASS |
 | 3 | [ ] provisional, Sol pending | [ ] Sol PASS | [ ] Sol PASS |
 | 4 | [ ] provisional, Sol pending | [ ] Sol PASS | [ ] Sol PASS |
 | 5 | [ ] terminated: Flash-Attention 2.8.3 outside 2.7.1-2.7.4 | [ ] Sol PASS | [ ] Sol PASS |
