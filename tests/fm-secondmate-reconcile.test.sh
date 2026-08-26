@@ -617,6 +617,66 @@ test_a_stale_remote_route_is_refused() {
   pass "a stale remote-route snapshot cannot ask or silence a replacement mate"
 }
 
+test_route_replacement_during_send_is_refused() {
+  local home rhome fakebin snap signal release out rc notify_pid
+  fakebin=$(make_remote_ssh_stub "$TMP_ROOT/remote-send-race")
+  rhome=$(make_remote_secondmate_home remote-send-race-mate)
+  home=$(make_remote_parent_home remote-send-race remote-send-race-mate "$rhome" old-host)
+  snap="$home/snapshot.json"
+  signal="$home/fm-send-started"
+  release="$home/release-fm-send"
+  write_remote_snapshot "$snap" remote-send-race-mate old-host \
+    '{"kind":"orphan_in_flight","ids":["old-ghost"]}'
+  cat > "$fakebin/dirname" <<'SH'
+#!/usr/bin/env bash
+set -u
+case "${1:-}" in
+  */fm-send.sh)
+    : > "$FM_RECONCILE_RACE_SIGNAL"
+    while [ ! -f "$FM_RECONCILE_RACE_RELEASE" ]; do sleep 0.01; done
+    ;;
+esac
+case "${1:-}" in
+  */*) printf '%s\n' "${1%/*}" ;;
+  *) printf '.\n' ;;
+esac
+SH
+  chmod +x "$fakebin/dirname"
+
+  rc=0
+  FM_RECONCILE_RACE_SIGNAL="$signal" FM_RECONCILE_RACE_RELEASE="$release" \
+    run_remote_notify "$home" "$fakebin" "$snap" > "$home/notify.out" 2>&1 &
+  notify_pid=$!
+  while [ ! -f "$signal" ]; do
+    kill -0 "$notify_pid" 2>/dev/null || fail "reconcile exited before entering fm-send"
+    sleep 0.01
+  done
+
+  . "$ROOT/bin/fm-wake-lib.sh"
+  fm_lock_acquire_wait "$home/state/.control-remote-send-race-mate.lock"
+  fm_lock_acquire_wait "$home/state/.meta-remote-send-race-mate.lock"
+  sed 's/^remote_host=.*/remote_host=new-host/' \
+    "$home/state/remote-send-race-mate.meta" > "$home/state/remote-send-race-mate.meta.tmp"
+  mv "$home/state/remote-send-race-mate.meta.tmp" "$home/state/remote-send-race-mate.meta"
+  sed 's/host: old-host/host: new-host/' \
+    "$home/data/secondmates.md" > "$home/data/secondmates.md.tmp"
+  mv "$home/data/secondmates.md.tmp" "$home/data/secondmates.md"
+  fm_lock_release "$home/state/.meta-remote-send-race-mate.lock"
+  fm_lock_release "$home/state/.control-remote-send-race-mate.lock"
+  : > "$release"
+  wait "$notify_pid" || rc=$?
+  out=$(cat "$home/notify.out")
+
+  [ "$rc" -ne 0 ] || fail "a route replacement during send reported success: $out"
+  assert_contains "$out" "failed: remote-send-race-mate orphan_in_flight" \
+    "a route replacement during send was not refused: $out"
+  [ -z "$(remote_inbox_records "$rhome" remote-send-race-mate)" ] \
+    || fail "a replacement route received its predecessor's reconcile ask"
+  assert_absent "$home/state/remote-send-race-mate.reconcile-nudged" \
+    "a refused route replacement started the cooldown"
+  pass "a route replacement between reconcile and fm-send cannot receive a stale ask"
+}
+
 # A row with neither a spawn generation nor a host carries no safe identity at
 # all - the markerless path must not swallow that case the way the original
 # bug swallowed every markerless row.
@@ -658,4 +718,5 @@ test_a_stale_snapshot_never_targets_a_replacement_mate
 test_teardown_cannot_leave_its_replacement_in_cooldown
 test_a_markerless_remote_secondmate_is_nudged_once_per_window
 test_a_stale_remote_route_is_refused
+test_route_replacement_during_send_is_refused
 test_a_row_with_no_identity_at_all_fails_loudly

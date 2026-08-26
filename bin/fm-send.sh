@@ -762,6 +762,8 @@ else
     if [ "$CURRENT_REMOTE_ID" != "$TARGET_REMOTE_ID" ] \
       || { [ -n "${FM_SEND_EXPECTED_SPAWN_GEN:-}" ] \
         && [ "$CURRENT_REMOTE_SPAWN_GEN" != "$FM_SEND_EXPECTED_SPAWN_GEN" ]; } \
+      || { [ -n "${FM_SEND_EXPECTED_REMOTE_HOST:-}" ] \
+        && [ "$CURRENT_REMOTE_HOST" != "$FM_SEND_EXPECTED_REMOTE_HOST" ]; } \
       || [ -z "$CURRENT_REMOTE_HOST" ] \
       || [ "$CURRENT_REMOTE_HOST" != "$TARGET_REMOTE_HOST" ]; then
       fm_lock_release "$REMOTE_META_LOCK"

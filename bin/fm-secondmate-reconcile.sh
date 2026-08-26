@@ -241,7 +241,7 @@ cmd_notify() {
     | [.id, .spawn_gen, .host, $kind]
     | join($sep)')
 
-  local id sampled_spawn_gen sampled_host kind path last age now delivered_at reconcile_lock control_lock meta meta_lock did send_rc
+  local id sampled_spawn_gen sampled_host expected_remote_host kind path last age now delivered_at reconcile_lock control_lock meta meta_lock did send_rc
   while IFS=$'\037' read -r id sampled_spawn_gen sampled_host kind; do
     [ -n "${id:-}" ] || continue
     path=$(nudge_path "$id")
@@ -299,9 +299,12 @@ cmd_notify() {
       release_active_locks
       continue
     }
+    expected_remote_host=
+    [ -n "$sampled_spawn_gen" ] || expected_remote_host=$sampled_host
     release_active_locks
     send_rc=0
     FM_TASK_INBOX_LOCK_WAIT_SECS=0 FM_SEND_EXPECTED_SPAWN_GEN="$sampled_spawn_gen" \
+      FM_SEND_EXPECTED_REMOTE_HOST="$expected_remote_host" \
       "$SCRIPT_DIR/fm-send.sh" "$id" --fire-and-forget "$did" \
       "$(reconcile_text)" >/dev/null 2>&1 || send_rc=$?
     # exit 3 is "typed but unconfirmed": the mate may already hold the ask, so
