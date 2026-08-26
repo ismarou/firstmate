@@ -47,12 +47,13 @@ Acceptance: The normalized video opens, the frame count is nonzero, the sampled 
 
 ### Stage 2c - optional background Gaussian splat
 
-Purpose: Train and export the optional static background Gaussian splat from the capture after foreground removal.
-Inputs: Splat-prepared stage 1b frames and `input_video.mp4`.
-Models or environment: The optional `nerfstudio_simfoundry` environment, SAM2, VOID, DepthAnything3, Nerfstudio, and 3DGRUT as applicable.
-Outputs: `s2c_gs/` splat processing and export artifacts.
-Failure modes: Missing optional environments, failed foreground inpainting, unregistered camera frames, insufficient splat coverage, or excessive memory and disk use.
-Visual evidence: A rendered splat view and an alignment overlay against the extracted scene point cloud.
+Purpose: Process the configured source video with Nerfstudio, train the optional static background Gaussian splat, and export it as PLY.
+Inputs: The source video configured for stage 1b, which stage 2c reuses by default.
+Models or environment: The optional `nerfstudio_simfoundry` environment, Nerfstudio `ns-process-data`, COLMAP, `splatfacto`, and `gsplat`.
+Outputs: `s2c_gs/processed/`, `s2c_gs/outputs/`, `s2c_gs/export/*.ply`, and `s2c_gs/stage_info.json`.
+Failure modes: Missing video or optional environment, insufficient camera registration, CUDA or JIT compilation failure, training failure, excessive memory or disk use, or an export that produces no PLY.
+Visual evidence: A rendered splat view and camera-registration coverage for the processed frames.
+The paper's foreground-inpainted automatic background add-on uses SAM2, VOID, DepthAnything3, and 3DGRUT separately from this runner stage.
 Route status: Excluded from the selected route, so no stage 2c command or review gate is scheduled for these runs.
 
 ### Stage 2 - estimate depth
@@ -108,7 +109,7 @@ Acceptance: Every required object has a reviewable transparent image at the expe
 ### Stage 7 - generate object meshes
 
 Purpose: Generate a visual mesh and texture for every accepted object image.
-Inputs: Stage 6 transparent upsampled images and the per-object iteration manifest.
+Inputs: Stage 6 `upsampled/iter_*_transparent.png` images and the optional object-index filter.
 Models or environment: Hunyuan3D-2.1 shape and texture generation in the `hunyuan` environment with `low_vram=true` and `save_intermediates=true`.
 Outputs: `s7_mesh/shape/hunyuan/*_shape.obj`, `s7_mesh/textured_mesh/hunyuan/*_mesh.glb`, untextured intermediate GLBs, per-object manifests, and retained generator intermediate outputs.
 Failure modes: Missing Hunyuan checkpoint, cache-location or home-quota failure, CUDA or VRAM exhaustion, malformed or fully opaque full-scene input when an isolated RGBA object is required, zero-triangle or non-finite mesh, texture baking failure, or an incomplete per-object manifest.
@@ -118,7 +119,7 @@ Acceptance: The bounded Hunyuan smoke has passed execution and artifact-loadabil
 ### Stage 8 - match object poses
 
 Purpose: Canonicalize each generated mesh's semantic front, fit it to its observed object point cloud, and emit a metric 6D transform and scale.
-Inputs: Stage 2 depth and RGB, stage 4 point cloud and camera transform, stage 5 masks, stage 6 reference photos when available, and stage 7 meshes.
+Inputs: Stage 2 depth, RGB, and intrinsics, stage 5 masks and regenerated depth, stage 6 reference photos when available, and stage 7 meshes.
 Models or environment: In the `simfoundry` environment, Luna runs `export SIMFOUNDRY_TEXT_VLM_BACKEND=codex`, passes `s8_pose.front_pick_model=gemini-2.5-flash` into the Gemini factory, keeps global `visualize=false`, and sets `s8_pose.use_foundationpose=true` so the Codex front selection is followed by FoundationPose through its CUDA `RasterizeCudaContext` without enabling Open3D `draw_geometries`.
 Outputs: `s8_pose/front_views/<object>/view_{A-H}_az*.png`, `s8_pose/canonical_mesh/<object>_orientation.json`, the canonical mesh under `s8_pose/canonical_mesh/`, the final pose in `s8_pose/info/<object>.json`, an immutable headless `s8_pose/fit/<object>_foundationpose_fit.png`, and retained `info_interactive*` refinements when manually corrected.
 Failure modes: Missing Codex selection, VLM failure recorded as an unchanged orientation, incorrect semantic-front or yaw selection, bad mesh topology, sparse or occluded mask, registration local minimum, implausible scale, missing pose dependency, CUDA failure, an interactive viewer caused by enabling `visualize`, or a transform that projects outside the observed object.
@@ -137,10 +138,10 @@ Route status: Excluded from the selected route, so no stage 8b command or review
 
 ### Stage 9 - compile the scene
 
-Purpose: Apply the world-frame transform and each object pose to compose the foreground scene before physics preparation.
+Purpose: Apply the world-frame transform and each object pose to compose and validate the foreground scene before physics preparation.
 Inputs: Stage 4 world point cloud and transform, stage 8 canonical meshes and pose JSON files, and the selected frame index.
 Models or environment: Open3D and SciPy utilities in the `simfoundry` environment.
-Outputs: `s9_compile/` compiled scene metadata and stage record.
+Outputs: `s9_compile/stage_info.json`; the composed scene exists in memory and Luna derives the retained scene view required below.
 Failure modes: Missing pose or mesh, mismatched object index, invalid transform, incorrect camera-to-world multiplication, or an object that is visibly displaced from its source evidence.
 Visual evidence: A complete compiled point-cloud and mesh scene with per-object labels and coordinate axes.
 Acceptance: All accepted objects are present exactly once with finite poses and the Sol reviewer returns PASS.
@@ -148,7 +149,7 @@ Acceptance: All accepted objects are present exactly once with finite poses and 
 ### Stage 10 - make objects simulation-ready
 
 Purpose: Assign physical properties, create collision geometry, and emit URDF-backed assets that can be imported by OmniGibson.
-Inputs: Stage 5 categories, stage 6 object images, stage 8 meshes and poses, and stage 9 compilation context.
+Inputs: Stage 5 categories, stage 6 object images, and stage 8 canonical meshes and pose scales.
 Models or environment: The `simfoundry` environment, the selected text VLM for physical annotation, and CoACD collision decomposition.
 Outputs: `s10_sim/scene_objects_info.json`, per-object visual and collision meshes, URDF files, material and physical property records, and stage metadata.
 Failure modes: Missing or invalid mesh, malformed category name, VLM authentication or schema failure, CoACD failure, missing visual or collision reference, non-finite mass or friction, or an invalid URDF.
@@ -187,7 +188,7 @@ Acceptance: The JSON reloads, every expected object is visible and placed plausi
 
 ## Artifact review rule
 
-Every stage produces both its primary artifact and a reviewable derived visualization or structural view.
+Every included stage produces both its primary artifact and a reviewable derived visualization or structural view.
 Image stages must include source-to-output comparisons, and non-image stages must include the relevant depth heatmap, point cloud, pose overlay, collision mesh, stability render, USD load evidence, or final OmniGibson preview.
 No downstream stage may start until the designated Sol reviewer has inspected the current attempt, returned PASS or concrete steering, and any requested correction has been rerun and accepted.
 The detailed reviewer outcomes, mediation loop, attempt naming, and checkbox tracker live in [`SIMFOUNDRY_EXECUTION_PLAN.md`](SIMFOUNDRY_EXECUTION_PLAN.md).
