@@ -89,7 +89,7 @@ Purpose: Detect foreground objects, iteratively isolate each object, remove it f
 Inputs: The stage 3 canonical RGB frame, stage 2 depth, stage 4 world-frame point cloud and transform, and prior iteration state when resuming.
 Models or environment: Codex text VLM for object categories and reasoning, SAM3 for image segmentation, FLUX for object removal, and PriorDepthAnything with the DA3 geometric backend in the `simfoundry` environment.
 Outputs: `s5_scene/decomposition_frame.json`, `obj_cat_list/iter_<N>.json`, detected-phrase overlays, removal masks, masked object crops, pre-removal and post-removal images, per-iteration metric depth `.npy` files and heatmap `.png` files, and residual scene images.
-Failure modes: VLM timeout or malformed response, invalid bounding box, missed or duplicate mask, occlusion, insufficient valid pixels, rejected FLUX removal, unusable regenerated depth, frame mismatch on resume, or quota exhaustion from retained iterations.
+Failure modes: VLM timeout or malformed response, invalid bounding box, missed or duplicate mask, occlusion, insufficient valid pixels, rejected FLUX removal, unusable regenerated depth, frame mismatch on resume, an unsupported Flash-Attention version such as `2.8.3` when the required range is `2.7.1`-`2.7.4`, or quota exhaustion from retained iterations.
 Visual evidence: Numbered detection overlays, mask and outline overlays, per-object transparent and background crops, before-and-after removal pairs, and a depth heatmap for every accepted iteration.
 Acceptance: Every retained object has a valid category record, mask, crop, removal result, and finite metric depth, and the Sol reviewer returns PASS.
 
@@ -109,9 +109,9 @@ Purpose: Generate a visual mesh and texture for every accepted object image.
 Inputs: Stage 6 transparent upsampled images and the per-object iteration manifest.
 Models or environment: Hunyuan3D-2.1 shape and texture generation in the `hunyuan` environment with `low_vram=true` and `save_intermediates=true`.
 Outputs: `s7_mesh/shape/hunyuan/*_shape.obj`, `s7_mesh/textured_mesh/hunyuan/*_mesh.glb`, untextured intermediate GLBs, per-object manifests, and retained generator intermediate outputs.
-Failure modes: Missing Hunyuan checkpoint, cache-location or home-quota failure, CUDA or VRAM exhaustion, malformed RGBA input, zero-triangle or non-finite mesh, texture baking failure, or an incomplete per-object manifest.
+Failure modes: Missing Hunyuan checkpoint, cache-location or home-quota failure, CUDA or VRAM exhaustion, malformed or fully opaque full-scene input when an isolated RGBA object is required, zero-triangle or non-finite mesh, texture baking failure, or an incomplete per-object manifest.
 Visual evidence: Multi-view mesh renders, textured and untextured comparisons, silhouette overlays against the stage 6 image, and a structural report containing triangle counts, bounds, material references, and finite vertex checks.
-Acceptance: The bounded Hunyuan smoke has passed before full stage 7 execution, every mesh job is finished, every mesh is loadable and non-empty, and the Sol reviewer returns PASS.
+Acceptance: The bounded Hunyuan smoke has passed execution and artifact-loadability checks with an isolated RGBA object input, every mesh job is finished, every mesh is loadable and non-empty, and Sol accepts the visual-quality evidence.
 
 ### Stage 8 - match object poses
 
@@ -192,14 +192,16 @@ The detailed reviewer outcomes, mediation loop, attempt naming, and checkbox tra
 
 ## Current evidence
 
-As of 2026-08-26, seven environments are installed: `simfoundry`, `hunyuan`, `any6d`, `da3`, `void`, `nerfstudio_simfoundry`, and `3dgrut`.
+Current snapshot at `2026-08-26T23:00:30Z` records seven installed environments: `simfoundry`, `hunyuan`, `any6d`, `da3`, `void`, `nerfstudio_simfoundry`, and `3dgrut`.
 The final environment matrix is green.
 `tiny-cuda-nn` was rebuilt and behavior-tested for `sm_86`.
 Nine checkpoint groups were downloaded.
 The Pipeline A dry-run passed.
 Repository tests passed with 243 passed and 29 skipped.
-The valid bounded Hunyuan stage-7 object smoke passed with one discovered object, a shape OBJ, a textured GLB, successful manifest and stage status, and a raw `nvidia-smi` peak of about 17203 MiB.
-The earlier home-quota cache-location failure remains in the retained smoke logs as historical evidence and is not rewritten as a pass.
-The `official_Fruits` run completed stage 1b, but its Sol review is pending.
-Stage 2 began before the new hard gate arrived and is provisional until stage 1b receives Sol PASS, so it does not authorize downstream execution.
+The valid bounded Hunyuan stage-7 object smoke passed shape and texture execution, artifact loadability, manifest and stage status, and a raw `nvidia-smi` peak of about 17203 MiB for one discovered object, producing a shape OBJ and textured GLB.
+Sol returned `BLOCK_INPUT` for Hunyuan visual-quality validation because the smoke input was a fully opaque full scene rather than an isolated RGBA object.
+The quality correction is deferred to a versioned isolated crop before full stage 7, and the earlier home-quota cache-location failure remains in the retained smoke logs as historical evidence.
+The `official_Fruits` run received Sol PASS for stage 1b and stage 2.
+Stages 3 and 4 produced provisional outputs but are not yet Sol-approved.
+Stage 5 terminated before useful decomposition output because Flash-Attention `2.8.3` is outside the required `2.7.1`-`2.7.4` range, and stage 6 did not start.
 No full-video stage is marked accepted until its versioned artifacts receive a Sol PASS.
