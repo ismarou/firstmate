@@ -17,7 +17,7 @@ The route omits stage 2c background Gaussian splat generation and does not pass 
 The route omits stage 8b articulation decomposition and does not pass `--detect-articulation`.
 The route therefore produces a foreground reconstruction with the normal floor and skybox behavior at stage 13 rather than a background splat scene.
 
-Each attempt must use a fresh resolved scene directory such as `Data/runs/Fruits/attempt-001` so that a retry cannot overwrite an automatic estimate or a prior review pass.
+Each attempt must use a fresh resolved scene directory under `data/simfoundry-runs/`, such as `data/simfoundry-runs/official_Fruits/attempt-001`, so that a retry cannot overwrite an automatic estimate or a prior review pass.
 Stage-local iteration files, manifests, automatic pose files, interactive pose directories, and intermediate model outputs are retained inside that attempt directory.
 The automatic stage estimate is immutable evidence, and every correction is written under a new attempt or refinement suffix.
 
@@ -198,5 +198,8 @@ The final environment matrix is green.
 Nine checkpoint groups were downloaded.
 The Pipeline A dry-run passed.
 Repository tests passed with 243 passed and 29 skipped.
-The bounded Hunyuan smoke is being recovered from a home-quota cache-location failure and has not yet passed.
+The valid bounded Hunyuan stage-7 object smoke passed with one discovered object, a shape OBJ, a textured GLB, successful manifest and stage status, and a raw `nvidia-smi` peak of about 17203 MiB.
+The earlier home-quota cache-location failure remains in the retained smoke logs as historical evidence and is not rewritten as a pass.
+The `official_Fruits` run completed stage 1b, but its Sol review is pending.
+Stage 2 began before the new hard gate arrived and is provisional until stage 1b receives Sol PASS, so it does not authorize downstream execution.
 No full-video stage is marked accepted until its versioned artifacts receive a Sol PASS.

@@ -316,6 +316,7 @@ When a steer answers an open keyed decision or blocker, pass `fm-send`'s `--reso
 Drive a worker's lifecycle through `bin/fm-control.sh <task-id> interrupt|exit|relaunch`, which owns the per-runtime mechanics, verifies each action, and never tears down or discards anything ([`docs/agent-control.md`](docs/agent-control.md)).
 A secondmate's routed reply returns through status or a document pointer, not by firstmate peeking into its chat.
 For the parent-owned correlation, recovery, and escalation contract on marked secondmate requests, see `bin/fm-pending-reply-lib.sh`.
+When the captain explicitly requests visual review after every module or step, downstream modules remain blocked until the designated reviewer inspects the current module's artifacts, returns PASS or concrete steering, and any requested correction is rerun and accepted.
 Supervise all live work under section 8.
 
 ### Selected delivery path and merge authority
@@ -344,7 +345,6 @@ After an autonomous merge, give the captain a one-line full-URL or local-main ou
 For a no-mistakes ship, trigger validation on the same worker after its implementation commit, using the harness invocation owned by `harness-adapters`.
 The task worker that starts a no-mistakes run drives the pipeline and owns every `no-mistakes axi run` and `no-mistakes axi respond` call through the next gate or outcome.
 Firstmate never invokes `no-mistakes axi respond` for a crew-owned run.
-When the captain explicitly requests visual review after every module or step, downstream modules remain blocked until the designated reviewer inspects the current module's artifacts, returns PASS or concrete steering, and any requested correction is rerun and accepted.
 Once validation starts, prefer routing new requirements to follow-up work rather than expanding the current task, unless a new requirement completely invalidates the work being validated; however, the smallest downstream changes needed to keep already accepted product or engineering behavior correct, add behavioral tests where an executable contract exists, or keep documentation accurate remain within the current task even when they touch files not named at intake, and corrections required to satisfy already accepted intent are not new requirements.
 
 Only a current, explicit captain instruction that completely invalidates the work being validated keeps the task with the same worker instead of routing it to follow-up work or handing it to a replacement.
