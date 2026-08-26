@@ -18,6 +18,7 @@ Firstmate records the reviewer result against the exact attempt and keeps the ne
 `PASS` means the required artifact set exists, the derived visualization is reviewable, behavioral or structural validation passed, and no requested correction remains open.
 `STEER` means Sol found a concrete correction and returned its artifact, rationale, rerun scope, and acceptance condition, so the current gate remains closed.
 `FAIL` means the output is unusable or the validation failed, so Luna stops at the current step and Firstmate routes the recovery without advancing.
+`BLOCK_INPUT` means Sol cannot judge the requested quality because the supplied input or evidence is invalid for that review, so Luna must create a corrected versioned input, rerun the dependent step, and return to Sol before advancing.
 `NEEDS-DECISION` means the evidence leaves a product or destructive choice genuinely ambiguous, so Firstmate escalates it and does not let Luna choose silently.
 `BLOCKED` means a dependency or external condition prevents a meaningful rerun, so Firstmate records the blocker and leaves the step held.
 Sol must inspect both visual and non-visual evidence before returning PASS.
@@ -73,7 +74,8 @@ Sol gate: PASS confirms the inputs required by the selected route, or BLOCKED re
 
 Luna subgoal: Run the smallest shape-and-texture Hunyuan3D-2.1 smoke with `low_vram=true` and a controlled cache location inside an approved disk budget.
 Required evidence: The source image, shape output, textured output, retained intermediates, VRAM report, mesh structural report, and smoke log.
-Sol gate: PASS is required before any full-video stage 7 run, and the valid one-object smoke has passed while its prior home-quota cache-location failure remains retained in the logs.
+Sol gate: Shape and texture execution, manifest and stage status, artifact loadability, and the raw `nvidia-smi` peak passed for one discovered object, but Sol returned `BLOCK_INPUT` for visual quality because the smoke input was a fully opaque full scene rather than an isolated RGBA object.
+Luna must rerun the smoke with a versioned isolated crop and obtain Sol PASS for visual quality before any full-video stage 7 run, while retaining the prior home-quota cache-location failure in the logs.
 
 ### M5 - run each video through stage 1b
 
@@ -187,18 +189,20 @@ Sol gate: PASS closes the package only when every video and every included stage
 - [x] Hunyuan3D-2.1 shape smoke with `low_vram=true` passed and produced one shape OBJ.
 - [x] Hunyuan3D-2.1 texture smoke with `low_vram=true` passed and produced one textured GLB.
 - [x] The one-object smoke reported successful manifest and stage status and a raw `nvidia-smi` peak of about 17203 MiB.
+- [x] Sol returned `BLOCK_INPUT` for visual-quality validation because the smoke input was a fully opaque full scene rather than an isolated RGBA object.
+- [ ] The smoke is rerun with a versioned isolated RGBA crop and receives Sol PASS for visual quality.
 - [ ] Sol returned PASS for the bounded Hunyuan smoke.
 
 ### Pipeline A per-video gates
 
 | Stage | `Fruits.mp4` | `PutCupInBowl.mp4` | `clipboard_fruit_basket_5s_10fps.mp4` |
 |---|---|---|---|
-| 1b | [ ] Sol PASS | [ ] Sol PASS | [ ] Sol PASS |
-| 2 | [ ] Sol PASS | [ ] Sol PASS | [ ] Sol PASS |
-| 3 | [ ] Sol PASS | [ ] Sol PASS | [ ] Sol PASS |
-| 4 | [ ] Sol PASS | [ ] Sol PASS | [ ] Sol PASS |
-| 5 | [ ] Sol PASS | [ ] Sol PASS | [ ] Sol PASS |
-| 6 | [ ] Sol PASS | [ ] Sol PASS | [ ] Sol PASS |
+| 1b | [x] Sol PASS | [ ] Sol PASS | [ ] Sol PASS |
+| 2 | [x] Sol PASS | [ ] Sol PASS | [ ] Sol PASS |
+| 3 | [ ] provisional, Sol pending | [ ] Sol PASS | [ ] Sol PASS |
+| 4 | [ ] provisional, Sol pending | [ ] Sol PASS | [ ] Sol PASS |
+| 5 | [ ] terminated: Flash-Attention 2.8.3 outside 2.7.1-2.7.4 | [ ] Sol PASS | [ ] Sol PASS |
+| 6 | [ ] not started | [ ] Sol PASS | [ ] Sol PASS |
 | 7 | [ ] Sol PASS | [ ] Sol PASS | [ ] Sol PASS |
 | 8 | [ ] Sol PASS | [ ] Sol PASS | [ ] Sol PASS |
 | 9 | [ ] Sol PASS | [ ] Sol PASS | [ ] Sol PASS |
@@ -211,8 +215,8 @@ Sol gate: PASS closes the package only when every video and every included stage
 Stage 2c is marked excluded by route for all three videos.
 Stage 8b is marked excluded by route for all three videos.
 An excluded stage has no execution checkbox and cannot be treated as a failed or passed artifact.
-The `official_Fruits` run completed stage 1b, but its stage 1b Sol review is pending, so the corresponding tracker cell remains unchecked.
-Stage 2 began before the new hard gate arrived and is provisional until stage 1b receives Sol PASS, so it does not authorize downstream execution.
+The `official_Fruits` run received Sol PASS for stage 1b and stage 2, while stage 2 began before the new hard gate arrived.
+Stages 3 and 4 produced provisional outputs but are not yet Sol-approved, stage 5 terminated before useful decomposition output because Flash-Attention `2.8.3` is outside the required `2.7.1`-`2.7.4` range, and stage 6 did not start.
 
 ## Non-image evidence minimums
 
@@ -233,7 +237,11 @@ Stage 13 requires the final OmniGibson preview, JSON reload, object inventory, a
 ## Current evidence boundary
 
 The installation and repository-test facts above are accepted current evidence as of 2026-08-26.
-The valid bounded Hunyuan stage-7 object smoke passed with one discovered object, a shape OBJ, a textured GLB, successful manifest and stage status, and a raw `nvidia-smi` peak of about 17203 MiB.
-The earlier home-quota cache-location failure remains in the retained smoke logs as historical evidence, while the Sol reviewer gate is still open.
+Current snapshot at `2026-08-26T23:00:30Z` records seven installed environments, a green final environment matrix, an `sm_86`-tested `tiny-cuda-nn` rebuild, nine downloaded checkpoint groups, a passed Pipeline A dry-run, and repository tests with 243 passed and 29 skipped.
+The valid bounded Hunyuan stage-7 object smoke passed shape and texture execution, artifact loadability, manifest and stage status, and a raw `nvidia-smi` peak of about 17203 MiB for one discovered object, producing a shape OBJ and textured GLB.
+Sol returned `BLOCK_INPUT` for visual-quality validation because the smoke input was a fully opaque full scene rather than an isolated RGBA object.
+The quality correction is deferred to a versioned isolated crop before full stage 7, and the earlier home-quota cache-location failure remains in the retained smoke logs as historical evidence.
+The `official_Fruits` run received Sol PASS for stage 1b and stage 2.
+Stages 3 and 4 produced provisional outputs but are not yet Sol-approved, stage 5 terminated before useful decomposition output because Flash-Attention `2.8.3` is outside the required `2.7.1`-`2.7.4` range, and stage 6 did not start.
 The dry-run proves command planning only and does not mark any full-video stage accepted.
 No full-video stage is accepted until its own versioned artifacts have a Sol PASS.
