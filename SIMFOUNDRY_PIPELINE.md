@@ -117,13 +117,13 @@ Acceptance: The bounded Hunyuan smoke has passed execution and artifact-loadabil
 
 ### Stage 8 - match object poses
 
-Purpose: Fit each generated canonical mesh to its observed object point cloud and emit a metric 6D transform and scale.
-Inputs: Stage 2 depth and RGB, stage 4 point cloud and camera transform, stage 5 masks, and stage 7 meshes.
-Models or environment: Point-cloud registration and the configured FoundationPose refinement dependency in the `simfoundry` environment, with Any6D dependencies available as installed by the implementation.
-Outputs: `s8_pose/canonical_mesh/`, `s8_pose/info/<object>.json`, optional FoundationPose debug artifacts, and retained `info_interactive*` refinements when manually corrected.
-Failure modes: Bad mesh topology, sparse or occluded mask, registration local minimum, implausible scale, missing pose dependency, CUDA failure, or a transform that projects outside the observed object.
-Visual evidence: Scene point cloud and posed mesh overlays, projected 3D boxes and coordinate axes, and automatic-versus-refined pose comparisons.
-Acceptance: Every object has a finite transform, plausible scale, and overlay within the reviewed object evidence, and the Sol reviewer returns PASS.
+Purpose: Canonicalize each generated mesh's semantic front, fit it to its observed object point cloud, and emit a metric 6D transform and scale.
+Inputs: Stage 2 depth and RGB, stage 4 point cloud and camera transform, stage 5 masks, stage 6 reference photos when available, and stage 7 meshes.
+Models or environment: In the `simfoundry` environment, Luna runs `export SIMFOUNDRY_TEXT_VLM_BACKEND=codex` and passes `s8_pose.front_pick_model=gemini-2.5-flash` into the Gemini factory, whose text-capable model selection routes to `CodexSubagent` with `gpt-5.6-sol` and `xhigh`, before point-cloud registration and FoundationPose refinement.
+Outputs: `s8_pose/front_views/<object>/view_{A-H}_az*.png`, `s8_pose/canonical_mesh/<object>_orientation.json`, `s8_pose/info/<object>.json`, optional FoundationPose debug artifacts, and retained `info_interactive*` refinements when manually corrected.
+Failure modes: Missing Codex selection, VLM failure recorded as an unchanged orientation, incorrect semantic-front or yaw selection, bad mesh topology, sparse or occluded mask, registration local minimum, implausible scale, missing pose dependency, CUDA failure, or a transform that projects outside the observed object.
+Visual evidence: The eight per-object front views plus the stage 6 reference photo when available, the orientation JSON, and the FoundationPose fit and axis overlay.
+Acceptance: Sol confirms each semantic-front and yaw choice and the fitted orientation before PASS, while a frontless symmetric fruit or bowl may use an explicitly justified `ambiguous` or `NONE` result with zero yaw.
 
 ### Stage 8b - optional articulation
 
