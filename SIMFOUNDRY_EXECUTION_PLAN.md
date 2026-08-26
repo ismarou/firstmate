@@ -50,7 +50,7 @@ The following order is strict, and each row ends at a Sol gate before the next r
 
 ### M0 - freeze the route
 
-Luna subgoal: Create the attempt manifest and pin video mode, `SIMFOUNDRY_TEXT_VLM_BACKEND=codex`, the `CodexSubagent` headless Codex CLI route with `gpt-5.6-sol` and `xhigh`, FLUX for stages 5 and 6, Hunyuan3D-2.1 for stage 7 shape and texture, `low_vram=true`, `s8_pose.front_pick_model=gemini-2.5-flash`, no stage 2c, no stage 8b, and `s13_og.include_robot=false`.
+Luna subgoal: Create the attempt manifest and pin video mode, `SIMFOUNDRY_TEXT_VLM_BACKEND=codex`, the `CodexSubagent` headless Codex CLI route with `gpt-5.6-sol` and `xhigh`, FLUX for stages 5 and 6, Hunyuan3D-2.1 for stage 7 shape and texture, `low_vram=true`, global `visualize=false`, `s8_pose.front_pick_model=gemini-2.5-flash`, `s8_pose.use_foundationpose=true`, no stage 2c, no stage 8b, and `s13_og.include_robot=false`.
 Required evidence: The manifest-pinned source and adapter revisions, resolved single-stage `--include <single-stage-id> --no-stream` command template, configuration diff, route summary, and unique attempt directory.
 Sol gate: PASS confirms the route and attempt identity, or STEER names the exact route correction.
 
@@ -123,9 +123,10 @@ Sol gate: PASS is required before that video's stage 8 begins, and a smoke PASS 
 
 ### M12 - run each video through stage 8
 
-Luna subgoal: Export `SIMFOUNDRY_TEXT_VLM_BACKEND=codex`, pass `s8_pose.front_pick_model=gemini-2.5-flash`, canonicalize each mesh's semantic front through `CodexSubagent`, align it to the observed point cloud, and record finite metric poses and scales.
-Required evidence: Per-object `s8_pose/front_views/<object>/view_{A-H}_az*.png`, the stage 6 reference photo when available, `s8_pose/canonical_mesh/<object>_orientation.json`, and the FoundationPose fit and axis overlay, plus any retained refinement directories.
-Sol gate: PASS is required before that video's stage 9 begins after Sol confirms the semantic-front and yaw choice and fitted orientation, with an explicitly justified `ambiguous` or `NONE` result and zero yaw accepted for a frontless symmetric fruit or bowl.
+Luna subgoal: Export `SIMFOUNDRY_TEXT_VLM_BACKEND=codex`, pass `s8_pose.front_pick_model=gemini-2.5-flash`, keep global `visualize=false`, set `s8_pose.use_foundationpose=true`, canonicalize each mesh's semantic front through `CodexSubagent`, and fit it through the existing CUDA `RasterizeCudaContext` without enabling Open3D `draw_geometries`.
+Headless evidence step: After execution, generate an immutable per-object `s8_pose/fit/<object>_foundationpose_fit.png` from the saved `z_up` transform in `s8_pose/info/<object>.json`, the canonical mesh bounds under `s8_pose/canonical_mesh/`, accepted RGB, and intrinsics with FoundationPose `Utils.draw_posed_3d_box` and `draw_xyz_axis` or equivalent OpenCV projection.
+Required evidence: Per-object `s8_pose/front_views/<object>/view_{A-H}_az*.png`, the stage 6 reference photo when available, `s8_pose/canonical_mesh/<object>_orientation.json`, the saved canonical mesh and final pose JSON, the headless box and axis overlay, and any retained refinement directories.
+Sol gate: PASS is required before that video's stage 9 begins after Sol confirms the semantic-front and yaw choice, fitted orientation, and per-object box and axis overlay, with an explicitly justified `ambiguous` or `NONE` result and zero yaw accepted for a frontless symmetric fruit or bowl.
 
 ### M13 - run each video through stage 9
 
@@ -240,7 +241,7 @@ Stage 4 requires raw-to-world point-cloud evidence and transform validation.
 Stage 5 requires detection, removal, crop, and regenerated-depth evidence for each retained iteration.
 Stage 6 requires image comparisons and alpha or background structural checks.
 Stage 7 requires mesh renders, silhouette comparisons, and triangle, bounds, material, and finite-vertex checks.
-Stage 8 requires front-view and reference-photo evidence, the orientation JSON, FoundationPose and axis overlays, and transform and scale checks.
+Stage 8 requires front-view and reference-photo evidence, the orientation JSON, saved canonical mesh and pose, a headless per-object box and axis overlay, and transform and scale checks.
 Stage 9 requires a full compiled-scene view and object inventory.
 Stage 10 requires collision-mesh overlays and URDF structural validation.
 Stage 11 requires stability renders and behavioral convergence or penetration checks.
