@@ -134,7 +134,11 @@
 # retry. The remote host runs no re-ring ladder of its own: a swallowed ordinary
 # doorbell surfaces through the parent's pending-reply recovery and escalation,
 # whose recovery request re-rings the remote doorbell when it is enqueued;
-# fire-and-forget delivery deliberately arms neither mechanism.
+# fire-and-forget delivery deliberately arms neither mechanism. Internal
+# semantic callers may set FM_SEND_EXPECTED_SPAWN_GEN or
+# FM_SEND_EXPECTED_REMOTE_HOST to require that sampled identity to still match
+# during the final locked remote-route validation; unset or empty guards do not
+# change ordinary sends.
 #
 # Decision closure (answerer-closes): pass --resolve-key <key> (repeatable,
 # before the message) when this send answers an open keyed needs-decision: or

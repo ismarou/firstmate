@@ -37,18 +37,15 @@
 #
 # Lock acquisition is non-blocking. A busy reconcile, lifecycle-control, or
 # metadata lock skips that home without starting its cooldown, so a later recap
-# can retry. The sampled spawn generation is revalidated before delivery and
-# before the cooldown commit so a retired endpoint is never nudged or allowed to
-# silence its replacement.
+# can retry. The sampled endpoint identity is revalidated before delivery, by
+# fm-send under its final route lock, and before the cooldown commit so a retired
+# endpoint is never nudged or allowed to silence its replacement.
 #
-# A persistent REMOTE secondmate's parent-side metadata never carries spawn_gen:
-# bin/fm-spawn.sh's spawn_remote_secondmate() is its sole writer and that
-# incarnation identity does not apply to a remote route (docs/remote-secondmates.md).
-# Such a row is legitimate and markerless by construction, not corrupt, so it is
-# revalidated on its recorded remote_host instead: a row with no sampled spawn_gen
-# is accepted only when it also carries a sampled host, and is nudged only while
-# the current metadata still has no spawn_gen and the same remote_host. A row with
-# neither a spawn_gen nor a host cannot be identified at all and fails loudly.
+# A persistent REMOTE secondmate's parent-side metadata intentionally has no
+# spawn_gen (docs/remote-secondmates.md). Such a row is legitimate and markerless
+# by construction, not corrupt, so it uses its sampled remote_host as the separate
+# identity guard. The current metadata must still have no spawn_gen and must still
+# name that host. A row with neither identity fails loudly.
 #
 # Exit status: 0 when no delivery or cooldown-recording failure is known,
 # including when a home was skipped for lock contention or a stale endpoint;
