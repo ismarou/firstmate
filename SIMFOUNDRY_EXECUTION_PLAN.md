@@ -35,7 +35,7 @@ Sol must inspect both visual and non-visual evidence before returning PASS.
 
 ## Versioned attempts
 
-Every run uses a unique resolved scene directory such as `Data/runs/<video>/attempt-001` and never reuses a prior attempt directory for a retry.
+Every run uses a unique resolved scene directory under `data/simfoundry-runs/`, such as `data/simfoundry-runs/official_Fruits/attempt-001`, and never reuses a prior attempt directory for a retry.
 The attempt manifest records the source video checksum, route, configuration overrides, environment matrix, model identifiers, command lines, and output paths.
 Stage 5 object iterations remain as `iter_<N>` records, stage 7 generator intermediates remain enabled, and stage 8 automatic poses remain in `info/` while refinements use new `info_interactive*` directories.
 An attempt correction receives a new attempt number or an explicit refinement suffix such as `attempt-001-r1`, and no correction may overwrite the automatic estimate or a prior Sol PASS.
@@ -73,7 +73,7 @@ Sol gate: PASS confirms the inputs required by the selected route, or BLOCKED re
 
 Luna subgoal: Run the smallest shape-and-texture Hunyuan3D-2.1 smoke with `low_vram=true` and a controlled cache location inside an approved disk budget.
 Required evidence: The source image, shape output, textured output, retained intermediates, VRAM report, mesh structural report, and smoke log.
-Sol gate: PASS is required before any full-video stage 7 run, and the current status remains not passed while recovery from the home-quota cache-location failure is under way.
+Sol gate: PASS is required before any full-video stage 7 run, and the valid one-object smoke has passed while its prior home-quota cache-location failure remains retained in the logs.
 
 ### M5 - run each video through stage 1b
 
@@ -183,10 +183,10 @@ Sol gate: PASS closes the package only when every video and every included stage
 
 ### Bounded Hunyuan smoke
 
-- [ ] Cache-location recovery from the home-quota failure is complete.
-- [ ] Hunyuan3D-2.1 shape smoke with `low_vram=true` passed.
-- [ ] Hunyuan3D-2.1 texture smoke with `low_vram=true` passed.
-- [ ] Smoke outputs are versioned and retained with structural and visual evidence.
+- [x] Cache-location recovery from the home-quota failure completed for the valid one-object smoke.
+- [x] Hunyuan3D-2.1 shape smoke with `low_vram=true` passed and produced one shape OBJ.
+- [x] Hunyuan3D-2.1 texture smoke with `low_vram=true` passed and produced one textured GLB.
+- [x] The one-object smoke reported successful manifest and stage status and a raw `nvidia-smi` peak of about 17203 MiB.
 - [ ] Sol returned PASS for the bounded Hunyuan smoke.
 
 ### Pipeline A per-video gates
@@ -211,6 +211,8 @@ Sol gate: PASS closes the package only when every video and every included stage
 Stage 2c is marked excluded by route for all three videos.
 Stage 8b is marked excluded by route for all three videos.
 An excluded stage has no execution checkbox and cannot be treated as a failed or passed artifact.
+The `official_Fruits` run completed stage 1b, but its stage 1b Sol review is pending, so the corresponding tracker cell remains unchecked.
+Stage 2 began before the new hard gate arrived and is provisional until stage 1b receives Sol PASS, so it does not authorize downstream execution.
 
 ## Non-image evidence minimums
 
@@ -231,6 +233,7 @@ Stage 13 requires the final OmniGibson preview, JSON reload, object inventory, a
 ## Current evidence boundary
 
 The installation and repository-test facts above are accepted current evidence as of 2026-08-26.
-The bounded Hunyuan smoke is not a pass because it is being recovered from a home-quota cache-location failure.
+The valid bounded Hunyuan stage-7 object smoke passed with one discovered object, a shape OBJ, a textured GLB, successful manifest and stage status, and a raw `nvidia-smi` peak of about 17203 MiB.
+The earlier home-quota cache-location failure remains in the retained smoke logs as historical evidence, while the Sol reviewer gate is still open.
 The dry-run proves command planning only and does not mark any full-video stage accepted.
 No full-video stage is accepted until its own versioned artifacts have a Sol PASS.
