@@ -14,6 +14,8 @@ Silence, a successful process exit, a green dry-run, or a plausible log is not a
 Firstmate records the reviewer result against the exact attempt and keeps the next step blocked until the result is complete.
 Every Pipeline A stage runs as `scripts/pipeline/A_reconstruction/run.sh --include <single-stage-id> --no-stream`, with exactly one stage identifier in `--include`.
 When that command exits, Luna packages immutable versioned evidence and stops while Firstmate routes it to Sol, and only PASS authorizes the next stage command.
+Validation remains risk-proportionate: prioritize progress on the requested primary task and use the smallest test that proves the immediate blocker or next real pipeline stage is ready, without spending disproportionate time on redundant or nonessential smoke tests.
+Do not repeat an established check unless relevant state changed or new evidence contradicts it, while preserving mandatory correctness and safety tests and the captain-required `gpt-5.6-sol` `xhigh` visual-review gate after every module before advancement.
 
 ## Reviewer outcomes
 
