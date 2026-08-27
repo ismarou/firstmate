@@ -317,6 +317,8 @@ Drive a worker's lifecycle through `bin/fm-control.sh <task-id> interrupt|exit|r
 A secondmate's routed reply returns through status or a document pointer, not by firstmate peeking into its chat.
 For the parent-owned correlation, recovery, and escalation contract on marked secondmate requests, see `bin/fm-pending-reply-lib.sh`.
 When the captain explicitly requests visual review after every module or step, downstream modules remain blocked until the designated reviewer inspects the current module's artifacts, returns PASS or concrete steering, and any requested correction is rerun and accepted.
+Validation remains risk-proportionate: prioritize progress on the requested primary task and use the smallest test that proves the immediate blocker or next real pipeline stage is ready, without spending disproportionate time on redundant or nonessential smoke tests.
+Do not repeat an established check unless relevant state changed or new evidence contradicts it, while preserving mandatory correctness and safety tests and the captain-required `gpt-5.6-sol` `xhigh` visual-review gate after every module before advancement.
 Supervise all live work under section 8.
 
 ### Selected delivery path and merge authority

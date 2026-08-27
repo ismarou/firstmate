@@ -190,6 +190,8 @@ Acceptance: The JSON reloads, every expected object is visible and placed plausi
 
 Every included stage produces both its primary artifact and a reviewable derived visualization or structural view.
 Image stages must include source-to-output comparisons, and non-image stages must include the relevant depth heatmap, point cloud, pose overlay, collision mesh, stability render, USD load evidence, or final OmniGibson preview.
+Validation remains risk-proportionate: prioritize progress on the requested primary task and use the smallest test that proves the immediate blocker or next real pipeline stage is ready, without spending disproportionate time on redundant or nonessential smoke tests.
+Do not repeat an established check unless relevant state changed or new evidence contradicts it, while preserving mandatory correctness and safety tests and the captain-required `gpt-5.6-sol` `xhigh` visual-review gate after every module before advancement.
 No downstream stage may start until the designated Sol reviewer has inspected the current attempt, returned PASS or concrete steering, and any requested correction has been rerun and accepted.
 The detailed reviewer outcomes, mediation loop, attempt naming, and checkbox tracker live in [`SIMFOUNDRY_EXECUTION_PLAN.md`](SIMFOUNDRY_EXECUTION_PLAN.md).
 
