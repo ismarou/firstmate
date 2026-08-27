@@ -201,14 +201,6 @@
       "audience": "agent-runtime"
     },
     {
-      "path": "SIMFOUNDRY_EXECUTION_PLAN.md",
-      "audience": "operator-current"
-    },
-    {
-      "path": "SIMFOUNDRY_PIPELINE.md",
-      "audience": "operator-current"
-    },
-    {
       "path": "CONTRIBUTING.md",
       "audience": "maintainer-architecture"
     },
