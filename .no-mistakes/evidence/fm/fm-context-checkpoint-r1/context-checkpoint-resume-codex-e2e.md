@@ -1,0 +1,1 @@
+Captain, I would inspect the generated checkpoint for fidelity against the source conversation and contract.
