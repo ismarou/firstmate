@@ -186,6 +186,24 @@ When that section reports its checks still in progress it names exactly what is 
    A file that does not exist prints an explicit `ABSENT` marker, never confused with an empty-but-present file: absence is meaningful (`captain.md` absent means use the firstmate repo's built-in defaults, `projects.md` absent means rebuild it from the clones under `projects/`, etc.).
    The closing reminder points back to the emitted supervision block and preserves only the lock, afk, Relay, and read-once reminders.
 
+### Context checkpoint handoff
+
+When context compaction or another boundary interrupts a conversation, output only a dense `CONTEXT CHECKPOINT SUMMARY` for seamless continuation.
+Because Codex may stop loading instructions at its configured `project_doc_max_bytes` limit, which is 32 KiB by default, keep this contract in the early loaded portion and do not assume later `AGENTS.md` text is present.
+Use exactly these semantic sections:
+
+- `PREVIOUSLY` - capture the communication timeline, major turns and decisions, completed work with evidence, key reasoning and tradeoffs, findings and feedback, and correctness constraints.
+- `PARKED TASKS` - capture only other conversation threads, file references, decisions, and open questions, and never assume their tool sessions, jobs, approvals, or subagents remain live.
+- `CURRENT TASK` - capture the exact objective and progress, completed and remaining work, immediate next action, exact plan statuses, pending approvals, running jobs or reusable sessions, every subagent's identity, purpose, status, and latest actionable output, critical artifacts, re-validation checks, and explicit unknowns.
+
+Copy commands, errors, identifiers, hashes, and gate outcomes exactly, and prefer qualified references such as `@path:line-range`.
+If no work remains, write `NEXT ACTION: NONE` with an explanation.
+If this session began from a checkpoint, integrate still-relevant facts instead of recursively copying the prior summary.
+On resume, continue from `CURRENT TASK` without rehashing completed work.
+Invoke `/stow` before planned compaction or reset when durable knowledge or open-work records may exist only in conversation; `/stow` owns persistence, while this summary owns the transient handoff.
+The [GitHub discussion #17330](https://github.com/openai/codex/discussions/17330) is provenance for this pattern, while the [official OpenAI AGENTS.md documentation](https://developers.openai.com/codex/guides/agents-md) remains authoritative for instruction discovery and reload behavior.
+A checkpoint summary is a handoff, not a compaction or instruction-reload mechanism, so do not claim that Codex or Cursor automatically reloads `AGENTS.md` or re-emits it after compaction; `docs/sessionstart-nudge.md` owns supported adapter behavior.
+
 Bootstrap detects first, asks for consent, and installs only after the captain approves in the current session.
 Do not dispatch until the required tools are present and GitHub authentication is good.
 Use `gh-axi` for GitHub, `chrome-devtools-axi` for browser work, and `lavish-axi` for structured decisions or reports; consult current help rather than memorizing flags.
