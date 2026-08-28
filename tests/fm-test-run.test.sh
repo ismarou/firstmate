@@ -370,7 +370,8 @@ test_portable_shard_union_and_coverage_guard() {
     && fail "portable lanes must not include real-herdr-gated smoke"
   printf '%s\n' "$herdr" | grep -Fq 'tests/fm-backend-herdr-smoke.test.sh' \
     || fail "herdr family must include smoke"
-  out=$("$RUNNER" --check-coverage)
+  out=$(env -u LC_ALL LANG=en_US.UTF-8 "$RUNNER" --check-coverage 2>&1) \
+    || fail "coverage guard must ignore ambient collation: $out"
   assert_contains "$out" "FM_TEST_COVERAGE ok" "coverage guard success marker"
   all_count=$("$RUNNER" --list --all | wc -l | tr -d ' ')
   union_count=$(printf '%s\n' "$s1" "$s2" "$serial" "$herdr" | LC_ALL=C sort -u | wc -l | tr -d ' ')
